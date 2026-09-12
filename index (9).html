@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nigerian English Transcription/QA — Skill Test</title>
+<style>
+  :root{
+    --navy:#0f2540; --navy2:#16345c; --accent:#2f6fed; --green:#1f9d55;
+    --red:#d64545; --gray:#6b7280; --bg:#f4f6f9; --card:#ffffff; --border:#e2e6ec;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:#1c2430;}
+  header{background:var(--navy);color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;}
+  header h1{font-size:18px;margin:0;font-weight:600;}
+  header .id{font-size:13px;opacity:.8;}
+  .wrap{max-width:880px;margin:24px auto;padding:0 16px 60px;}
+  .steps{display:flex;gap:4px;margin-bottom:20px;}
+  .steps div{flex:1;text-align:center;padding:8px 4px;font-size:12px;border-radius:6px;background:#e2e6ec;color:#6b7280;}
+  .steps div.active{background:var(--accent);color:#fff;font-weight:600;}
+  .steps div.done{background:var(--green);color:#fff;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:20px;}
+  .card h2{margin-top:0;font-size:17px;color:var(--navy2);}
+  .card p.sub{color:var(--gray);font-size:13px;margin-top:-8px;}
+  label{display:block;font-size:13px;font-weight:600;margin:14px 0 6px;}
+  input[type=text], input[type=tel], select, textarea{
+    width:100%;padding:9px 10px;border:1px solid #cbd2db;border-radius:6px;font-size:14px;
+  }
+  .radio-row{display:flex;gap:18px;font-weight:400;font-size:14px;align-items:center;}
+  .radio-row label{display:flex;align-items:center;gap:6px;margin:0;font-weight:400;}
+  .rate-box{margin-top:12px;padding:12px 14px;border-radius:8px;background:#eef4ff;border:1px solid #c9dcff;font-size:14px;display:none;}
+  .rate-box.show{display:block;}
+  .rate-box b{color:var(--accent);}
+  .hidden{display:none !important;}
+  button{cursor:pointer;border:none;border-radius:6px;font-size:14px;padding:10px 18px;font-weight:600;}
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-primary:disabled{background:#a9c2f5;cursor:not-allowed;}
+  .btn-secondary{background:#eef1f5;color:#333;}
+  .btn-green{background:var(--green);color:#fff;}
+  .btn-red{background:var(--red);color:#fff;}
+  .btn-gray{background:#8a94a3;color:#fff;}
+  .nav-row{display:flex;justify-content:space-between;margin-top:20px;}
+  .passage{background:#fbfbfb;border:1px dashed #c7cdd6;padding:16px;border-radius:8px;font-size:16px;line-height:1.6;margin-top:10px;}
+  .rec-controls{display:flex;gap:10px;align-items:center;margin-top:14px;flex-wrap:wrap;}
+  .rec-dot{width:10px;height:10px;border-radius:50%;background:var(--red);display:inline-block;animation:pulse 1s infinite;}
+  @keyframes pulse{0%{opacity:1;}50%{opacity:.3;}100%{opacity:1;}}
+  audio{width:100%;margin-top:10px;}
+
+  /* Transcription test tool (Utrans-style) */
+  .task-header{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--gray);margin-bottom:8px;}
+  .waveform-wrap{position:relative;background:#000;border-radius:6px;overflow:hidden;}
+  canvas#waveform{display:block;width:100%;height:140px;cursor:crosshair;}
+  .transport{display:flex;align-items:center;gap:16px;margin:10px 0;flex-wrap:wrap;font-size:13px;}
+  .transport label{margin:0;font-weight:400;display:flex;align-items:center;gap:6px;}
+  .valid-row{display:flex;gap:24px;align-items:flex-start;margin-top:14px;flex-wrap:wrap;}
+  .valid-row .block{flex:1;min-width:220px;}
+  .valid-row .radio-row label{font-weight:600;}
+  #invalidReasonWrap{margin-top:8px;}
+  textarea#segText{margin-top:10px;min-height:70px;resize:vertical;}
+  .action-row{display:flex;justify-content:space-between;align-items:center;margin-top:12px;flex-wrap:wrap;gap:10px;}
+  table.segtable{width:100%;border-collapse:collapse;margin-top:18px;font-size:13px;}
+  table.segtable th, table.segtable td{border-bottom:1px solid var(--border);padding:8px 6px;text-align:left;}
+  table.segtable th{color:var(--gray);font-weight:600;}
+  .tag{font-size:11px;padding:2px 8px;border-radius:10px;background:#e6f7ea;color:var(--green);}
+  .tag.invalid{background:#fdeaea;color:var(--red);}
+  .link-btn{background:none;border:none;color:var(--accent);font-size:12px;cursor:pointer;padding:0;margin-right:8px;}
+  .msg-toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:10px 20px;border-radius:6px;font-size:13px;z-index:999;display:none;}
+  .final-agree{display:flex;gap:10px;align-items:flex-start;font-size:14px;background:#fff8ec;border:1px solid #f0dca8;padding:16px;border-radius:8px;}
+  footer.note{font-size:12px;color:var(--gray);text-align:center;margin-top:30px;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Nigerian English — Transcription &amp; QA Skill Test</h1>
+  <div class="id">Applicant Skill Assessment</div>
+</header>
+
+<div class="wrap">
+  <div class="steps">
+    <div id="stepTab-1" class="active">1. Registration</div>
+    <div id="stepTab-2">2. Voice Test</div>
+    <div id="stepTab-3">3. Transcription Test</div>
+    <div id="stepTab-4">4. Agreement &amp; Submit</div>
+  </div>
+
+  <div class="msg-toast" id="toast"></div>
+
+  <!-- STEP 1: REGISTRATION -->
+  <section id="step1" class="card">
+    <h2>Applicant Information</h2>
+    <p class="sub">Please fill in your details accurately. Providing false information may disqualify your application.</p>
+
+    <label>Full Name</label>
+    <input type="text" id="fullName">
+
+    <label>Country</label>
+    <input type="text" id="country" placeholder="e.g. Nigeria">
+
+    <label>WhatsApp Number</label>
+    <input type="tel" id="whatsapp" placeholder="+234...">
+
+    <label>Educational Qualification</label>
+    <select id="eduQual">
+      <option value="">Select</option>
+      <option>Secondary School (SSCE)</option>
+      <option>OND / Diploma</option>
+      <option>Bachelor's Degree (HND/BSc/BA)</option>
+      <option>Master's Degree</option>
+      <option>Other</option>
+    </select>
+    <p class="sub" style="margin-top:6px;">Note: shortlisted applicants may be asked to share their academic certificate for verification.</p>
+
+    <label>Native Language</label>
+    <input type="text" id="nativeLang">
+
+    <label>Are you fluent in English?</label>
+    <div class="radio-row">
+      <label><input type="radio" name="fluent" value="Yes"> Yes</label>
+      <label><input type="radio" name="fluent" value="No"> No</label>
+    </div>
+
+    <label>Do you have a PC/Laptop?</label>
+    <div class="radio-row">
+      <label><input type="radio" name="pc" value="Yes"> Yes</label>
+      <label><input type="radio" name="pc" value="No"> No</label>
+    </div>
+
+    <label>Do you have a good quality headphone?</label>
+    <div class="radio-row">
+      <label><input type="radio" name="headphone" value="Yes"> Yes</label>
+      <label><input type="radio" name="headphone" value="No"> No</label>
+    </div>
+
+    <label>Do you or did you work in any transcription work before?</label>
+    <div class="radio-row">
+      <label><input type="radio" name="priorExp" value="Yes"> Yes</label>
+      <label><input type="radio" name="priorExp" value="No"> No</label>
+    </div>
+    <div id="priorExpPlatformWrap" class="hidden">
+      <label>Which platform(s) did you work on?</label>
+      <input type="text" id="priorExpPlatform">
+    </div>
+
+    <label>Have you worked on the Speechocean platform as a transcriber?</label>
+    <div class="radio-row">
+      <label><input type="radio" name="speechocean" value="Yes"> Yes</label>
+      <label><input type="radio" name="speechocean" value="No"> No</label>
+    </div>
+
+    <label>Are you applying for Transcription (TR) or QA?</label>
+    <div class="radio-row">
+      <label><input type="radio" name="role" value="TR"> Transcription (TR)</label>
+      <label><input type="radio" name="role" value="QA"> QA</label>
+    </div>
+    <div id="rateBox" class="rate-box"></div>
+
+    <div class="nav-row">
+      <span></span>
+      <button class="btn-primary" id="toStep2" disabled>Continue to Voice Test</button>
+    </div>
+  </section>
+
+  <!-- STEP 2: VOICE ASSESSMENT -->
+  <section id="step2" class="card hidden">
+    <h2>Voice Assessment Test</h2>
+    <p class="sub">Please read the passage below aloud, clearly and at a natural pace, then record it.</p>
+    <div class="passage" id="passageText">
+      Good afternoon. Communication is one of the most important skills a person can develop, especially when working with people from different backgrounds. I enjoy listening carefully and paying attention to small details, because even a single missed word can change the meaning of a whole sentence. I am confident that my accuracy and patience make me a strong fit for this role.
+    </div>
+    <div class="rec-controls">
+      <button class="btn-red" id="recStart">● Start Recording</button>
+      <button class="btn-gray" id="recStop" disabled>■ Stop</button>
+      <span id="recStatus"></span>
+    </div>
+    <audio id="recPlayback" controls class="hidden"></audio>
+    <div class="nav-row">
+      <button class="btn-secondary" id="toStep1Back">Back</button>
+      <button class="btn-primary" id="toStep3" disabled>Continue to Transcription Test</button>
+    </div>
+  </section>
+
+  <!-- STEP 3: TRANSCRIPTION TEST -->
+  <section id="step3" class="card hidden">
+    <h2>Transcription Test</h2>
+    <p class="sub">Segment and transcribe each of the 5 short audio tracks exactly as instructed in training. Mark unusable portions as Invalid with a reason.</p>
+
+    <div class="task-header">
+      <span>Task <b id="taskNum">1</b> of 5</span>
+      <span id="taskFile"></span>
+    </div>
+
+    <div class="waveform-wrap">
+      <canvas id="waveform"></canvas>
+    </div>
+
+    <div class="transport">
+      <button class="btn-secondary" id="playBtn">▶ Play/Pause</button>
+      <label><input type="checkbox" id="loopMode"> Loop playback</label>
+      <label><input type="checkbox" id="partitionMode" checked> Playback selection only</label>
+      <label>Volume <input type="range" id="volCtrl" min="0" max="1" step="0.05" value="1"></label>
+      <label>Speed
+        <select id="speedCtrl">
+          <option value="0.75">0.75x</option>
+          <option value="1" selected>1x</option>
+          <option value="1.25">1.25x</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="valid-row">
+      <div class="block">
+        <label>Determine if the sound is valid</label>
+        <div class="radio-row">
+          <label><input type="radio" name="segValid" value="valid" checked> Valid</label>
+          <label><input type="radio" name="segValid" value="invalid"> Invalid</label>
+        </div>
+        <div id="invalidReasonWrap" class="hidden">
+          <label>Reason</label>
+          <select id="invalidReason">
+            <option value="">Please select reason</option>
+            <option>Unknown</option>
+            <option>Foreign</option>
+            <option>Noise</option>
+            <option>TTS</option>
+            <option>Voicemail</option>
+            <option>Overlap</option>
+            <option>Truncation</option>
+          </select>
+        </div>
+      </div>
+      <div class="block">
+        <label>Identity</label>
+        <select id="identitySelect">
+          <option value="">Please select Identity</option>
+          <option>Customer</option>
+          <option>Agent</option>
+        </select>
+      </div>
+    </div>
+
+    <textarea id="segText" placeholder="Type the transcription for the selected segment here..."></textarea>
+
+    <div class="action-row">
+      <span id="selectionInfo" style="font-size:12px;color:var(--gray);">No segment selected — click and drag on the waveform</span>
+      <div>
+        <button class="btn-secondary" id="clearTextBtn">Clear this text</button>
+        <button class="btn-primary" id="saveSegBtn">Save</button>
+      </div>
+    </div>
+
+    <table class="segtable">
+      <thead><tr><th>ID</th><th>Time</th><th>Text</th><th>Attribute</th><th>Option</th></tr></thead>
+      <tbody id="segTableBody"></tbody>
+    </table>
+
+    <div class="nav-row">
+      <button class="btn-green" id="commitTaskBtn">Commit Task &amp; Continue →</button>
+    </div>
+
+    <div class="nav-row">
+      <button class="btn-secondary" id="toStep2Back">Back</button>
+      <button class="btn-primary" id="toStep4" disabled>Continue to Agreement</button>
+    </div>
+  </section>
+
+  <!-- STEP 4: AGREEMENT & SUBMIT -->
+  <section id="step4" class="card hidden">
+    <h2>Work Agreement</h2>
+    <div class="final-agree">
+      <input type="checkbox" id="agreeCheck" style="margin-top:3px;">
+      <label style="margin:0;font-weight:400;" for="agreeCheck">
+        By checking this box, I confirm that all information and test answers I provided are my own genuine work,
+        and I agree that if hired, I will work 6–8 hours daily on this project.
+      </label>
+    </div>
+    <div class="nav-row">
+      <button class="btn-secondary" id="toStep3Back">Back</button>
+      <button class="btn-primary" id="submitBtn" disabled>Submit Application</button>
+    </div>
+  </section>
+
+  <section id="doneCard" class="card hidden">
+    <h2>✅ Submitted</h2>
+    <p>Your test has been submitted successfully. We will review your submission and contact you on WhatsApp if you're shortlisted.</p>
+  </section>
+
+  <footer class="note">Nigerian English Transcription/QA Skill Test — all submissions are confidential and reviewed manually.</footer>
+</div>
+
+<script>
+/* ---------------- Config ---------------- */
+const RATES = { TR: 14, QA: 5 };
+const AUDIO_FILES = [
+  "audio/task1.mp3",
+  "audio/task2.mp3",
+  "audio/task3.mp3",
+  "audio/task4.mp3",
+  "audio/task5.mp3"
+];
+// TODO: set your deployed Google Apps Script Web App URL here
+const SUBMIT_URL = "https://script.google.com/macros/s/AKfycbxO2UEkGy-ojf9EYKZOba7h-Xw9ZENH8RDEnPftpRIA0ksP_dsLJWQUTDxI_e3YnONm/exec";
+
+/* ---------------- State ---------------- */
+const state = {
+  registration: {},
+  voiceRecordingBlob: null,
+  currentTask: 0,
+  taskResults: [], // per task: { file, segments: [...] }
+  segments: [],    // segments for current task
+  segIdCounter: 1,
+  selection: null  // {start, end} in seconds
+};
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  setTimeout(()=>{ t.style.display='none'; }, 2200);
+}
+
+/* ---------------- Step navigation ---------------- */
+function showStep(n){
+  for(let i=1;i<=4;i++){
+    document.getElementById('step'+i).classList.toggle('hidden', i!==n);
+    const tab = document.getElementById('stepTab-'+i);
+    tab.classList.toggle('active', i===n);
+    tab.classList.toggle('done', i<n);
+  }
+}
+
+/* ---------------- STEP 1 ---------------- */
+const regInputs = ['fullName','country','whatsapp','eduQual','nativeLang'];
+function validateStep1(){
+  let ok = regInputs.every(id => document.getElementById(id).value.trim() !== '');
+  ['fluent','pc','headphone','priorExp','speechocean','role'].forEach(name=>{
+    if(!document.querySelector(`input[name=${name}]:checked`)) ok = false;
+  });
+  const priorExp = document.querySelector('input[name=priorExp]:checked');
+  if(priorExp && priorExp.value==='Yes' && document.getElementById('priorExpPlatform').value.trim()==='') ok=false;
+  document.getElementById('toStep2').disabled = !ok;
+}
+document.querySelectorAll('#step1 input, #step1 select').forEach(el=>{
+  el.addEventListener('input', validateStep1);
+  el.addEventListener('change', validateStep1);
+});
+document.querySelectorAll('input[name=priorExp]').forEach(r=>{
+  r.addEventListener('change', ()=>{
+    document.getElementById('priorExpPlatformWrap').classList.toggle('hidden', r.value!=='Yes' || !r.checked);
+    validateStep1();
+  });
+});
+document.querySelectorAll('input[name=role]').forEach(r=>{
+  r.addEventListener('change', ()=>{
+    const box = document.getElementById('rateBox');
+    box.classList.add('show');
+    box.innerHTML = `Your rate as <b>${r.value}</b>: <b>$${RATES[r.value]} / audio hour</b>`;
+  });
+});
+document.getElementById('toStep2').addEventListener('click', ()=>{
+  regInputs.forEach(id=> state.registration[id]=document.getElementById(id).value.trim());
+  ['fluent','pc','headphone','priorExp','speechocean','role'].forEach(name=>{
+    state.registration[name] = document.querySelector(`input[name=${name}]:checked`).value;
+  });
+  if(state.registration.priorExp==='Yes') state.registration.priorExpPlatform = document.getElementById('priorExpPlatform').value.trim();
+  showStep(2);
+});
+document.getElementById('toStep1Back').addEventListener('click', ()=>showStep(1));
+
+/* ---------------- STEP 2: Voice recording ---------------- */
+let mediaRecorder, recChunks=[];
+document.getElementById('recStart').addEventListener('click', async ()=>{
+  const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+  mediaRecorder = new MediaRecorder(stream);
+  recChunks = [];
+  mediaRecorder.ondataavailable = e=> recChunks.push(e.data);
+  mediaRecorder.onstop = ()=>{
+    const blob = new Blob(recChunks, {type:'audio/webm'});
+    state.voiceRecordingBlob = blob;
+    const url = URL.createObjectURL(blob);
+    const player = document.getElementById('recPlayback');
+    player.src = url;
+    player.classList.remove('hidden');
+    document.getElementById('toStep3').disabled = false;
+    stream.getTracks().forEach(t=>t.stop());
+  };
+  mediaRecorder.start();
+  document.getElementById('recStart').disabled = true;
+  document.getElementById('recStop').disabled = false;
+  document.getElementById('recStatus').innerHTML = '<span class="rec-dot"></span> Recording...';
+});
+document.getElementById('recStop').addEventListener('click', ()=>{
+  mediaRecorder.stop();
+  document.getElementById('recStart').disabled = false;
+  document.getElementById('recStop').disabled = true;
+  document.getElementById('recStatus').textContent = 'Recorded ✓';
+});
+document.getElementById('toStep2Back').addEventListener('click', ()=>showStep(1));
+document.getElementById('toStep3').addEventListener('click', ()=>{ showStep(3); loadTask(0); });
+
+/* ---------------- STEP 3: Transcription test (Utrans-style) ---------------- */
+const canvas = document.getElementById('waveform');
+const ctx = canvas.getContext('2d');
+let audioCtx, audioBuffer, sourceNode, isPlaying=false, playStartTime=0, playOffset=0;
+
+async function loadTask(i){
+  state.currentTask = i;
+  state.segments = [];
+  state.segIdCounter = 1;
+  state.selection = null;
+  document.getElementById('taskNum').textContent = i+1;
+  document.getElementById('taskFile').textContent = AUDIO_FILES[i];
+  document.getElementById('segTableBody').innerHTML = '';
+  resetSegForm();
+
+  audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  try{
+    const resp = await fetch(AUDIO_FILES[i]);
+    const arr = await resp.arrayBuffer();
+    audioBuffer = await audioCtx.decodeAudioData(arr);
+    drawWaveform();
+  }catch(e){
+    ctx.fillStyle='#000'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle='#888'; ctx.font='14px sans-serif';
+    ctx.fillText('Could not load '+AUDIO_FILES[i]+' — place the audio file at that path.', 10, 70);
+  }
+}
+
+function resizeCanvas(){
+  canvas.width = canvas.clientWidth * devicePixelRatio;
+  canvas.height = canvas.clientHeight * devicePixelRatio;
+}
+window.addEventListener('resize', ()=>{ resizeCanvas(); drawWaveform(); });
+
+function drawWaveform(){
+  if(!audioBuffer) return;
+  resizeCanvas();
+  const data = audioBuffer.getChannelData(0);
+  const w = canvas.width, h = canvas.height, mid = h/2;
+  const step = Math.ceil(data.length / w);
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle = '#000'; ctx.fillRect(0,0,w,h);
+
+  for(let x=0; x<w; x++){
+    let min=1, max=-1;
+    for(let j=0;j<step;j++){
+      const idx = x*step+j;
+      if(idx>=data.length) break;
+      const v = data[idx];
+      if(v<min) min=v;
+      if(v>max) max=v;
+    }
+    const inSel = state.selection && isXInSelection(x,w);
+    ctx.strokeStyle = inSel ? '#c37ad6' : '#ffffff';
+    ctx.beginPath();
+    ctx.moveTo(x, mid + min*mid*0.9);
+    ctx.lineTo(x, mid + max*mid*0.9);
+    ctx.stroke();
+  }
+  // draw saved segment boundaries
+  state.segments.forEach(seg=>{
+    const sx = timeToX(seg.start,w), ex = timeToX(seg.end,w);
+    ctx.fillStyle = seg.valid ? 'rgba(47,111,237,0.15)' : 'rgba(214,69,69,0.15)';
+    ctx.fillRect(sx,0,ex-sx,h);
+  });
+}
+function timeToX(t,w){ return (t/audioBuffer.duration)*w; }
+function xToTime(x,w){ return (x/w)*audioBuffer.duration; }
+function isXInSelection(x,w){
+  const sx = timeToX(state.selection.start,w), ex = timeToX(state.selection.end,w);
+  return x>=Math.min(sx,ex) && x<=Math.max(sx,ex);
+}
+
+let dragging=false, dragStartX=0;
+canvas.addEventListener('mousedown', e=>{
+  if(!audioBuffer) return;
+  dragging = true;
+  const rect = canvas.getBoundingClientRect();
+  dragStartX = (e.clientX-rect.left) * devicePixelRatio;
+});
+canvas.addEventListener('mousemove', e=>{
+  if(!dragging || !audioBuffer) return;
+  const rect = canvas.getBoundingClientRect();
+  const x = (e.clientX-rect.left) * devicePixelRatio;
+  const t1 = xToTime(dragStartX, canvas.width);
+  const t2 = xToTime(x, canvas.width);
+  state.selection = { start:Math.min(t1,t2), end:Math.max(t1,t2) };
+  drawWaveform();
+  updateSelectionInfo();
+});
+window.addEventListener('mouseup', ()=>{ dragging=false; });
+
+function updateSelectionInfo(){
+  const info = document.getElementById('selectionInfo');
+  if(state.selection){
+    info.textContent = `Selected: ${state.selection.start.toFixed(2)}s – ${state.selection.end.toFixed(2)}s`;
+  } else {
+    info.textContent = 'No segment selected — click and drag on the waveform';
+  }
+}
+
+document.getElementById('playBtn').addEventListener('click', ()=>{
+  if(!audioBuffer) return;
+  if(isPlaying){ stopPlayback(); return; }
+  const partitionMode = document.getElementById('partitionMode').checked;
+  const start = (partitionMode && state.selection) ? state.selection.start : 0;
+  const end = (partitionMode && state.selection) ? state.selection.end : audioBuffer.duration;
+  sourceNode = audioCtx.createBufferSource();
+  sourceNode.buffer = audioBuffer;
+  sourceNode.playbackRate.value = parseFloat(document.getElementById('speedCtrl').value);
+  const gainNode = audioCtx.createGain();
+  gainNode.gain.value = parseFloat(document.getElementById('volCtrl').value);
+  sourceNode.connect(gainNode).connect(audioCtx.destination);
+  sourceNode.loop = document.getElementById('loopMode').checked;
+  if(sourceNode.loop){ sourceNode.loopStart=start; sourceNode.loopEnd=end; }
+  sourceNode.start(0, start, sourceNode.loop?undefined:(end-start));
+  isPlaying = true;
+  sourceNode.onended = ()=>{ isPlaying=false; };
+});
+function stopPlayback(){
+  if(sourceNode){ try{sourceNode.stop();}catch(e){} }
+  isPlaying = false;
+}
+
+document.querySelectorAll('input[name=segValid]').forEach(r=>{
+  r.addEventListener('change', ()=>{
+    document.getElementById('invalidReasonWrap').classList.toggle('hidden', r.value!=='invalid' || !r.checked);
+  });
+});
+
+function resetSegForm(){
+  document.getElementById('segText').value='';
+  document.getElementById('identitySelect').value='';
+  document.getElementById('invalidReason').value='';
+  document.querySelector('input[name=segValid][value=valid]').checked = true;
+  document.getElementById('invalidReasonWrap').classList.add('hidden');
+  state.selection = null;
+  updateSelectionInfo();
+}
+
+document.getElementById('clearTextBtn').addEventListener('click', ()=>{
+  document.getElementById('segText').value='';
+});
+
+document.getElementById('saveSegBtn').addEventListener('click', ()=>{
+  if(!state.selection){ toast('Please select a portion of the waveform first.'); return; }
+  const isValid = document.querySelector('input[name=segValid]:checked').value === 'valid';
+  const identity = document.getElementById('identitySelect').value;
+  const reason = document.getElementById('invalidReason').value;
+  const text = document.getElementById('segText').value.trim();
+
+  if(!identity){
+    alert('Please select Identity');
+    return;
+  }
+  if(!isValid && !reason){
+    alert('Please select a reason for marking this segment Invalid');
+    return;
+  }
+  if(isValid && text===''){
+    alert('Please type the transcription text for this segment');
+    return;
+  }
+
+  const seg = {
+    id: state.segIdCounter++,
+    start: state.selection.start,
+    end: state.selection.end,
+    text: isValid ? text : (reason),
+    valid: isValid,
+    identity: identity,
+    reason: isValid ? '' : reason
+  };
+  state.segments.push(seg);
+  renderSegTable();
+  drawWaveform();
+  resetSegForm();
+  toast('Segment saved');
+});
+
+function renderSegTable(){
+  const body = document.getElementById('segTableBody');
+  body.innerHTML = '';
+  state.segments.forEach(seg=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${seg.id}</td>
+      <td>${seg.start.toFixed(2)}–${seg.end.toFixed(2)}</td>
+      <td>${seg.valid ? escapeHtml(seg.text) : '<em>('+seg.reason+')</em>'}</td>
+      <td><span class="tag ${seg.valid?'':'invalid'}">${seg.valid?'Valid':'Invalid'}</span> | ${seg.identity}</td>
+      <td><button class="link-btn" data-del="${seg.id}">delete</button></td>
+    `;
+    body.appendChild(tr);
+  });
+  body.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      state.segments = state.segments.filter(s=>s.id != btn.dataset.del);
+      renderSegTable();
+      drawWaveform();
+    });
+  });
+}
+function escapeHtml(s){ return s.replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+document.getElementById('commitTaskBtn').addEventListener('click', ()=>{
+  if(state.segments.length===0){ toast('Add at least one segment before committing.'); return; }
+  state.taskResults[state.currentTask] = { file: AUDIO_FILES[state.currentTask], segments: state.segments };
+  toast('Task '+(state.currentTask+1)+' committed');
+  if(state.currentTask < AUDIO_FILES.length-1){
+    loadTask(state.currentTask+1);
+  } else {
+    document.getElementById('toStep4').disabled = false;
+    toast('All 5 tasks committed — you can continue');
+  }
+});
+
+document.getElementById('toStep3Back').addEventListener('click', ()=>showStep(3));
+document.getElementById('toStep4').addEventListener('click', ()=>showStep(4));
+
+/* ---------------- STEP 4: Agreement & Submit ---------------- */
+document.getElementById('agreeCheck').addEventListener('change', e=>{
+  document.getElementById('submitBtn').disabled = !e.target.checked;
+});
+
+document.getElementById('submitBtn').addEventListener('click', async ()=>{
+  document.getElementById('submitBtn').disabled = true;
+  document.getElementById('submitBtn').textContent = 'Submitting...';
+
+  const reader = new FileReader();
+  const recordingBase64 = await new Promise(resolve=>{
+    if(!state.voiceRecordingBlob){ resolve(null); return; }
+    reader.onloadend = ()=> resolve(reader.result.split(',')[1]);
+    reader.readAsDataURL(state.voiceRecordingBlob);
+  });
+
+  const payload = {
+    registration: state.registration,
+    voiceRecordingBase64: recordingBase64,
+    transcriptionTest: state.taskResults,
+    agreedToHours: true,
+    submittedAt: new Date().toISOString()
+  };
+
+  try{
+    await fetch(SUBMIT_URL, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain'}, // avoids CORS preflight for Apps Script
+      body: JSON.stringify(payload)
+    });
+  }catch(e){
+    console.error('Submit failed', e);
+  }
+
+  showStep(4);
+  document.getElementById('step4').classList.add('hidden');
+  document.getElementById('doneCard').classList.remove('hidden');
+});
+
+resizeCanvas();
+</script>
+</body>
+</html>
