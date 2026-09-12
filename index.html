@@ -229,7 +229,7 @@
           </select>
         </div>
       </div>
-      <div class="block">
+      <div class="block" id="identityWrap">
         <label>Identity</label>
         <select id="identitySelect">
           <option value="">Please select Identity</option>
@@ -644,6 +644,7 @@ function stopPlayback(){
 document.querySelectorAll('input[name=segValid]').forEach(r=>{
   r.addEventListener('change', ()=>{
     document.getElementById('invalidReasonWrap').classList.toggle('hidden', r.value!=='invalid' || !r.checked);
+    document.getElementById('identityWrap').classList.toggle('hidden', r.value==='invalid' && r.checked);
   });
 });
 
@@ -653,6 +654,7 @@ function resetSegForm(){
   document.getElementById('invalidReason').value='';
   document.querySelector('input[name=segValid][value=valid]').checked = true;
   document.getElementById('invalidReasonWrap').classList.add('hidden');
+  document.getElementById('identityWrap').classList.remove('hidden');
   state.selection = null;
   updateSelectionInfo();
 }
@@ -668,7 +670,7 @@ document.getElementById('saveSegBtn').addEventListener('click', ()=>{
   const reason = document.getElementById('invalidReason').value;
   const text = document.getElementById('segText').value.trim();
 
-  if(!identity){
+  if(isValid && !identity){
     alert('Please select Identity');
     return;
   }
@@ -687,7 +689,7 @@ document.getElementById('saveSegBtn').addEventListener('click', ()=>{
     end: state.selection.end,
     text: isValid ? text : (reason),
     valid: isValid,
-    identity: identity,
+    identity: isValid ? identity : '',
     reason: isValid ? '' : reason
   };
   state.segments.push(seg);
@@ -706,7 +708,7 @@ function renderSegTable(){
       <td>${seg.id}</td>
       <td>${seg.start.toFixed(2)}–${seg.end.toFixed(2)}</td>
       <td>${seg.valid ? escapeHtml(seg.text) : '<em>('+seg.reason+')</em>'}</td>
-      <td><span class="tag ${seg.valid?'':'invalid'}">${seg.valid?'Valid':'Invalid'}</span> | ${seg.identity}</td>
+      <td><span class="tag ${seg.valid?'':'invalid'}">${seg.valid?'Valid':'Invalid'}</span>${seg.identity ? ' | '+seg.identity : ''}</td>
       <td><button class="link-btn" data-del="${seg.id}">delete</button></td>
     `;
     body.appendChild(tr);
