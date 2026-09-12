@@ -401,7 +401,8 @@ document.getElementById('toStep3').addEventListener('click', ()=>{ showStep(3); 
 /* ---------------- STEP 3: Transcription test (Utrans-style) ---------------- */
 const canvas = document.getElementById('waveform');
 const ctx = canvas.getContext('2d');
-let audioCtx, audioBuffer, sourceNode, isPlaying=false, playStartTime=0, playOffset=0;
+let audioCtx, audioBuffer, sourceNode, isPlaying=false;
+let playStartCtxTime=0, playRangeStart=0, playRangeEnd=0, playRate=1, playLoop=false, playheadPos=null, playAnimFrame=null;
 
 async function loadTask(i){
   state.currentTask = i;
@@ -477,6 +478,23 @@ function drawWaveform(){
   ctx.clearRect(0,0,w,h);
   ctx.fillStyle = '#000'; ctx.fillRect(0,0,w,h);
 
+  // draw saved (committed) segment backgrounds first, underneath the waveform
+  state.segments.forEach(seg=>{
+    const sx = timeToX(seg.start,w), ex = timeToX(seg.end,w);
+    ctx.fillStyle = seg.valid ? 'rgba(47,111,237,0.25)' : 'rgba(214,69,69,0.25)';
+    ctx.fillRect(sx,0,ex-sx,h);
+  });
+
+  // draw the current in-progress selection as a bright highlighted band
+  let selSx=0, selEx=0;
+  if(state.selection){
+    selSx = timeToX(state.selection.start,w);
+    selEx = timeToX(state.selection.end,w);
+    ctx.fillStyle = 'rgba(255,196,0,0.35)';
+    ctx.fillRect(Math.min(selSx,selEx), 0, Math.abs(selEx-selSx), h);
+  }
+
+  // draw waveform bars
   for(let x=0; x<w; x++){
     let min=1, max=-1;
     for(let j=0;j<step;j++){
@@ -487,18 +505,53 @@ function drawWaveform(){
       if(v>max) max=v;
     }
     const inSel = state.selection && isXInSelection(x,w);
-    ctx.strokeStyle = inSel ? '#c37ad6' : '#ffffff';
+    ctx.strokeStyle = inSel ? '#ffd23f' : '#ffffff';
+    ctx.lineWidth = 1*devicePixelRatio;
     ctx.beginPath();
     ctx.moveTo(x, mid + min*mid*0.9);
     ctx.lineTo(x, mid + max*mid*0.9);
     ctx.stroke();
   }
-  // draw saved segment boundaries
+
+  // draw bright boundary lines + time labels at the edges of the current selection
+  if(state.selection){
+    ctx.strokeStyle = '#ffd23f';
+    ctx.lineWidth = 2*devicePixelRatio;
+    [selSx, selEx].forEach(x=>{
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, h);
+      ctx.stroke();
+    });
+    ctx.fillStyle = '#ffd23f';
+    ctx.font = (12*devicePixelRatio)+'px sans-serif';
+    ctx.fillText(state.selection.start.toFixed(2)+'s', Math.min(selSx,selEx)+4, 16*devicePixelRatio);
+    ctx.fillText(state.selection.end.toFixed(2)+'s', Math.max(selSx,selEx)+4, 16*devicePixelRatio);
+  }
+
+  // outline committed segment boundaries so they stay visible after the drag ends
   state.segments.forEach(seg=>{
     const sx = timeToX(seg.start,w), ex = timeToX(seg.end,w);
-    ctx.fillStyle = seg.valid ? 'rgba(47,111,237,0.15)' : 'rgba(214,69,69,0.15)';
-    ctx.fillRect(sx,0,ex-sx,h);
+    ctx.strokeStyle = seg.valid ? '#2f6fed' : '#d64545';
+    ctx.lineWidth = 2*devicePixelRatio;
+    ctx.beginPath(); ctx.moveTo(sx,0); ctx.lineTo(sx,h); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ex,0); ctx.lineTo(ex,h); ctx.stroke();
   });
+
+  // moving playhead bar while audio is playing
+  if(playheadPos !== null){
+    const px = timeToX(playheadPos, w);
+    ctx.strokeStyle = '#39e75f';
+    ctx.lineWidth = 3*devicePixelRatio;
+    ctx.beginPath(); ctx.moveTo(px,0); ctx.lineTo(px,h); ctx.stroke();
+    ctx.fillStyle = '#39e75f';
+    ctx.beginPath();
+    ctx.moveTo(px-6*devicePixelRatio, 0);
+    ctx.lineTo(px+6*devicePixelRatio, 0);
+    ctx.lineTo(px, 10*devicePixelRatio);
+    ctx.closePath();
+    ctx.fill();
+  }
 }
 function timeToX(t,w){ return (t/audioBuffer.duration)*w; }
 function xToTime(x,w){ return (x/w)*audioBuffer.duration; }
@@ -529,7 +582,8 @@ window.addEventListener('mouseup', ()=>{ dragging=false; });
 function updateSelectionInfo(){
   const info = document.getElementById('selectionInfo');
   if(state.selection){
-    info.textContent = `Selected: ${state.selection.start.toFixed(2)}s – ${state.selection.end.toFixed(2)}s`;
+    const dur = (state.selection.end - state.selection.start).toFixed(2);
+    info.innerHTML = `<b style="color:#b8860b;">Selected: ${state.selection.start.toFixed(2)}s – ${state.selection.end.toFixed(2)}s (${dur}s)</b>`;
   } else {
     info.textContent = 'No segment selected — click and drag on the waveform';
   }
@@ -541,9 +595,10 @@ document.getElementById('playBtn').addEventListener('click', ()=>{
   const partitionMode = document.getElementById('partitionMode').checked;
   const start = (partitionMode && state.selection) ? state.selection.start : 0;
   const end = (partitionMode && state.selection) ? state.selection.end : audioBuffer.duration;
+  const rate = parseFloat(document.getElementById('speedCtrl').value);
   sourceNode = audioCtx.createBufferSource();
   sourceNode.buffer = audioBuffer;
-  sourceNode.playbackRate.value = parseFloat(document.getElementById('speedCtrl').value);
+  sourceNode.playbackRate.value = rate;
   const gainNode = audioCtx.createGain();
   gainNode.gain.value = parseFloat(document.getElementById('volCtrl').value);
   sourceNode.connect(gainNode).connect(audioCtx.destination);
@@ -551,11 +606,39 @@ document.getElementById('playBtn').addEventListener('click', ()=>{
   if(sourceNode.loop){ sourceNode.loopStart=start; sourceNode.loopEnd=end; }
   sourceNode.start(0, start, sourceNode.loop?undefined:(end-start));
   isPlaying = true;
-  sourceNode.onended = ()=>{ isPlaying=false; };
+  playStartCtxTime = audioCtx.currentTime;
+  playRangeStart = start;
+  playRangeEnd = end;
+  playRate = rate;
+  playLoop = sourceNode.loop;
+  animatePlayhead();
+  sourceNode.onended = ()=>{
+    isPlaying = false;
+    if(playAnimFrame) cancelAnimationFrame(playAnimFrame);
+    playheadPos = null;
+    drawWaveform();
+  };
 });
+function animatePlayhead(){
+  if(!isPlaying) return;
+  const elapsed = (audioCtx.currentTime - playStartCtxTime) * playRate;
+  const rangeLen = playRangeEnd - playRangeStart;
+  let pos;
+  if(playLoop && rangeLen>0){
+    pos = playRangeStart + (elapsed % rangeLen);
+  } else {
+    pos = Math.min(playRangeStart + elapsed, playRangeEnd);
+  }
+  playheadPos = pos;
+  drawWaveform();
+  playAnimFrame = requestAnimationFrame(animatePlayhead);
+}
 function stopPlayback(){
   if(sourceNode){ try{sourceNode.stop();}catch(e){} }
   isPlaying = false;
+  if(playAnimFrame) cancelAnimationFrame(playAnimFrame);
+  playheadPos = null;
+  drawWaveform();
 }
 
 document.querySelectorAll('input[name=segValid]').forEach(r=>{
