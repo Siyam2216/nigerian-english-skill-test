@@ -292,11 +292,11 @@
 /* ---------------- Config ---------------- */
 const RATES = { TR: 14, QA: 5 };
 const AUDIO_FILES = [
-  "audio/task1.mp3",
-  "audio/task2.mp3",
-  "audio/task3.mp3",
-  "audio/task4.mp3",
-  "audio/task5.mp3"
+  "task1.mp3",
+  "task2.mp3",
+  "task3.mp3",
+  "task4.mp3",
+  "task5.mp3"
 ];
 // TODO: set your deployed Google Apps Script Web App URL here
 const SUBMIT_URL = "https://script.google.com/macros/s/AKfycbxO2UEkGy-ojf9EYKZOba7h-Xw9ZENH8RDEnPftpRIA0ksP_dsLJWQUTDxI_e3YnONm/exec";
@@ -413,17 +413,53 @@ async function loadTask(i){
   document.getElementById('segTableBody').innerHTML = '';
   resetSegForm();
 
+  audioBuffer = null;
   audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  showCanvasMessage('Loading '+AUDIO_FILES[i]+' ...');
   try{
-    const resp = await fetch(AUDIO_FILES[i]);
+    const resp = await fetch(AUDIO_FILES[i], {cache:'no-store'});
+    if(!resp.ok){
+      throw new Error('HTTP '+resp.status+' '+resp.statusText+' for '+AUDIO_FILES[i]);
+    }
     const arr = await resp.arrayBuffer();
+    if(arr.byteLength === 0){
+      throw new Error(AUDIO_FILES[i]+' is empty (0 bytes)');
+    }
     audioBuffer = await audioCtx.decodeAudioData(arr);
     drawWaveform();
   }catch(e){
-    ctx.fillStyle='#000'; ctx.fillRect(0,0,canvas.width,canvas.height);
-    ctx.fillStyle='#888'; ctx.font='14px sans-serif';
-    ctx.fillText('Could not load '+AUDIO_FILES[i]+' — place the audio file at that path.', 10, 70);
+    console.error('Audio load failed:', e);
+    showCanvasMessage('⚠ Could not load audio.\n'+e.message+'\n\nCheck that the file exists at this exact path (case-sensitive) and try opening it directly in a new tab: ' + new URL(AUDIO_FILES[i], window.location.href).href, true);
   }
+}
+
+function showCanvasMessage(msg, isError){
+  resizeCanvas();
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle = '#000'; ctx.fillRect(0,0,w,h);
+  ctx.fillStyle = isError ? '#ff8080' : '#aaaaaa';
+  ctx.font = (14*devicePixelRatio)+'px sans-serif';
+  const lines = msg.split('\n');
+  const lineHeight = 20*devicePixelRatio;
+  const maxWidth = w - 20*devicePixelRatio;
+  let y = 30*devicePixelRatio;
+  lines.forEach(line=>{
+    // simple word-wrap
+    const words = line.split(' ');
+    let cur = '';
+    words.forEach(word=>{
+      const test = cur ? cur+' '+word : word;
+      if(ctx.measureText(test).width > maxWidth && cur){
+        ctx.fillText(cur, 10*devicePixelRatio, y);
+        y += lineHeight;
+        cur = word;
+      } else {
+        cur = test;
+      }
+    });
+    if(cur){ ctx.fillText(cur, 10*devicePixelRatio, y); y += lineHeight; }
+  });
 }
 
 function resizeCanvas(){
